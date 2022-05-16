@@ -2,7 +2,12 @@
 #include <iostream>
 #include <fstream>
 
-// cc sokoban.cpp -std=c++20 `pkg-config --libs --cflags raylib` -o sokoban
+// g++ sokoban.cpp -std=c++20 `pkg-config --libs --cflags raylib` -o sokoban
+
+const int gameSize = 400;
+const int noOfBoxes = 9;
+const int boxSize = gameSize / noOfBoxes;
+
 
 int main(void)
 {
@@ -11,51 +16,41 @@ int main(void)
     const int screenWidth = 800;
     const int screenHeight = 450;
 
-    const int boxWidth = 50;
-    const int boxHeight = 50;
-
-    int width1 = 8, height1 = 8;
+    int width1 = 9, height1 = 9;
     char lvl1[width1][height1];
 
     InitWindow(screenWidth, screenHeight, "Sokoban");
 
     std::ifstream level1("lvl1.txt");
 
-    if (!level1)
-    {
-        std::cout << "Error, file couldn't be opened\n";
-        return 1;
-    }
-
     for (int i = 0; i < width1; i++)
     {
         for (int j = 0; j < height1; j++)
         {
             level1 >> lvl1[i][j];
-            if (!level1)
-            {
-                std::cout << "Error reading file for element " << i << "," << j << "\n";
-                return 1;
-            }
         }
     }
 
     Texture2D head = LoadTexture("/Users/ahmedalam/Documents/Programming/C++/Project01/sokoban/resources/player.png");
     Texture2D wall = LoadTexture("/Users/ahmedalam/Documents/Programming/C++/Project01/sokoban/resources/wall.png");
-    Texture2D box = LoadTexture("/Users/ahmedalam/Documents/Programming/C++/Project01/sokoban/resources/crate.png");
+    Texture2D box = LoadTexture("/Users/ahmedalam/Documents/Programming/C++/Project01/sokoban/resources/Crate.png");
+    Texture2D backgorund = LoadTexture("/Users/ahmedalam/Documents/Programming/C++/Project01/sokoban/resources/BG.png");
+    Texture2D grass = LoadTexture("/Users/ahmedalam/Documents/Programming/C++/Project01/sokoban/resources/grass.png");
 
     Vector2 ballPosition = {(float)screenWidth / 2, (float)screenHeight / 2};
-    Vector2 headPosition = {(float)screenWidth / 2, (float)screenHeight / 2};
+    wall.width = boxSize + 15;
+    wall.height = boxSize + 15;
+    head.width = boxSize;
+    head.height = boxSize;
+    box.width = boxSize + 15;
+    box.height = boxSize + 15;
+    backgorund.width = boxSize + 15;
+    backgorund.height = boxSize + 15;
+    grass.width = boxSize + 15;
+    grass.height = boxSize + 15;
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
-
-    head.width = boxWidth;
-    head.height = boxHeight;
-    wall.width = boxWidth;
-    wall.height = boxHeight + 10;
-    box.width = boxWidth + 18.5;
-    box.height = boxHeight + 15.5;
 
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
@@ -77,37 +72,50 @@ int main(void)
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
-        for (int i = 0; i < width1; i++)
-        {
-            for (int j = 0; j < height1; j++)
-            {
 
+        int widthDiff = (screenWidth - gameSize) / 2;
+        int heightDiff = (screenHeight - gameSize) / 2;
+
+        // DrawRectangle(widthDiff, heightDiff, gameSize, gameSize, BROWN);
+
+        for (int i = 0; i < noOfBoxes; i++){
+            
+            for (int j = 0; j < noOfBoxes; j++){
+                              
                 if (lvl1[i][j] == '0')
                 {
-                    DrawTexture(wall, i * boxWidth, j * boxHeight, WHITE);
+                    DrawRectangle(i * boxSize + widthDiff, j * boxSize + heightDiff, boxSize, boxSize, MAROON);
+                    // DrawTexture(wall, i * boxSize + widthDiff, j * boxSize + heightDiff, WHITE);
                 }
                 else if (lvl1[i][j] == 'B')
                 {
-                    DrawTexture(box, i * boxWidth, j * boxHeight, WHITE);
+                    DrawRectangle(i * boxSize + widthDiff, j * boxSize + heightDiff, boxSize, boxSize, BROWN);
+                    // DrawTexture(box, i * boxSize + widthDiff, j * boxSize + heightDiff, WHITE);
                 }
                 else if (lvl1[i][j] == 'P')
                 {
-                    DrawTexture(head, i * boxWidth, j * boxHeight, WHITE);
+                    DrawRectangle(i * boxSize + widthDiff, j * boxSize + heightDiff, boxSize, boxSize, BLACK);
+                    // DrawTexture(head, i * boxSize + widthDiff, j * boxSize + heightDiff, WHITE);
                 }
                 else if (lvl1[i][j] == 'F')
                 {
-                    DrawRectangle(i * boxWidth, j * boxHeight, boxWidth, boxHeight, BLUE);
+                    DrawRectangle(i * boxSize + widthDiff, j * boxSize + heightDiff, boxSize, boxSize, BLUE);
+                    // DrawTexture(grass, i * boxSize + widthDiff, j * boxSize + heightDiff, WHITE);
                 }
                 else if (lvl1[i][j] == '1')
                 {
-                    DrawRectangle(i * boxWidth, j * boxHeight, boxWidth, boxHeight, GREEN);
+                    DrawRectangle(i * boxSize + widthDiff, j * boxSize + heightDiff, boxSize, boxSize, GREEN);
+                    // DrawTexture(grass, i * boxSize + widthDiff, j * boxSize + heightDiff, WHITE);
                 }
-                else if (lvl1[i][j] == 'X')
+                else if (lvl1[i][j] == 'X' || lvl1[i][j] == 'N')
                 {
-                    DrawRectangle(i * boxWidth, j * boxHeight, boxWidth, boxHeight, RAYWHITE);
+                    DrawRectangle(i * boxSize + widthDiff, j * boxSize + heightDiff, boxSize, boxSize, RAYWHITE);
+                    // DrawTexture(backgorund, i * boxSize + widthDiff, j * boxSize + heightDiff, WHITE);
                 }
             }
+
         }
+
 
         EndDrawing();
         //----------------------------------------------------------------------------------
