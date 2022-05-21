@@ -4,3 +4,5 @@ sokoban
 test.cpp
 test
 .DS_Store
+cmake
+build

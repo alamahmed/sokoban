@@ -6,6 +6,7 @@
 
 typedef enum GameScreen { TITLE, LEVEL1, LEVEL2, LEVEL3, LEVEL4, LEVEL5, ENDING } GameScreen;
 
+int score = 0;
 const int screenWidth = 1000;
 const int screenHeight = 599;
 const int rem = screenHeight % 100;
@@ -15,22 +16,27 @@ const int boxSize = gameSize / noOfBoxes;
 const int widthDiff = (screenWidth - gameSize) / 2;
 const int heightDiff = (screenHeight - gameSize) / 2;
 
+
 bool flag = 0;
-bool up = false;
-bool down = false;
-bool left = false;
-bool right = false;
+bool success = false;
+
+int wallCount = 0;
+int boxCount = 0;
+int targetCount = 0;
+
+int playerX;
+int playerY;
+
 
 Vector2 playerPos = {0, 0};
-Vector2 wallPos = {0, 0};
-Vector2 boxPos = {0, 0};
+Vector2 wallPos[50] = {0, 0};
+Vector2 boxPos[5] = {0, 0};
+Vector2 targetPos[5] = {0, 0};
 
 int row(int i);
 int column(int j);
-void checker(Vector2 playerPos, int i, int j);
-// void levels(char lvl1[][10], Vector2 playerPos, Texture2D player, Texture2D wall, Texture2D box, Texture2D goal, Texture2D background, Texture2D boxFinal, Texture2D grass);
-void levels(char lvl1[][10], Texture2D player, Texture2D wall, Texture2D box, Texture2D goal, Texture2D background, Texture2D boxFinal, Texture2D grass);
-void updates ();
+void levels(char lvl[][10], Texture2D player, Texture2D wall, Texture2D box, Texture2D goal, Texture2D background, Texture2D boxFinal, Texture2D grass);
+void updates(char lvl[][noOfBoxes]);
 
 
 int main()
@@ -42,10 +48,10 @@ int main()
 
     GameScreen currentScreen = TITLE;
     char lvl1[noOfBoxes][noOfBoxes], lvl2[noOfBoxes][noOfBoxes], lvl3[noOfBoxes][noOfBoxes], lvl4[noOfBoxes][noOfBoxes], lvl5[noOfBoxes][noOfBoxes];
+    std::ifstream level1("lvl1.txt"), level2("lvl2.txt"), level3("lvl3.txt"), level4("lvl4.txt"), level5("lvl5.txt");
 
     //--------------------------------------------------------------------------------------
     // LEVEL 1
-    std::ifstream level1("lvl1.txt");
     for (int i = 0; i < noOfBoxes; i++)
     {
         for (int j = 0; j < noOfBoxes; j++)
@@ -57,7 +63,6 @@ int main()
 
     //--------------------------------------------------------------------------------------
     // LEVEL 2
-    std::ifstream level2("lvl2.txt");
     for (int i = 0; i < noOfBoxes; i++)
     {
         for (int j = 0; j < noOfBoxes; j++)
@@ -69,7 +74,6 @@ int main()
 
     //--------------------------------------------------------------------------------------
     // LEVEL 3
-    std::ifstream level3("lvl3.txt");
     for (int i = 0; i < noOfBoxes; i++)
     {
         for (int j = 0; j < noOfBoxes; j++)
@@ -81,7 +85,6 @@ int main()
 
     //--------------------------------------------------------------------------------------
     // LEVEL 4
-    std::ifstream level4("lvl4.txt");
     for (int i = 0; i < noOfBoxes; i++)
     {
         for (int j = 0; j < noOfBoxes; j++)
@@ -93,7 +96,6 @@ int main()
 
     //--------------------------------------------------------------------------------------
     // LEVEL 5
-    std::ifstream level5("lvl5.txt");
     for (int i = 0; i < noOfBoxes; i++)
     {
         for (int j = 0; j < noOfBoxes; j++)
@@ -102,6 +104,7 @@ int main()
         }
     }
     //--------------------------------------------------------------------------------------
+
     //--------------------------------------------------------------------------------------
     // LOADING TEXTURES
     Texture2D player = LoadTexture("./resources/player.png");
@@ -115,6 +118,7 @@ int main()
 
     //--------------------------------------------------------------------------------------
     // Changing Size of the Texture
+    
     wall.width = boxSize;
     wall.height = boxSize;
     player.width = boxSize;
@@ -129,9 +133,10 @@ int main()
     goal.height = boxSize;
     boxFinal.width = boxSize;
     boxFinal.height = boxSize;
-    //--------------------------------------------------------------------------------------
 
-    SetTargetFPS(10); // Set game Frames-per-seconds
+    //--------------------------------------------------------------------------------------
+    // Set game Frames-per-seconds
+    SetTargetFPS(10);
     //--------------------------------------------------------------------------------------
 
     // Main game loop
@@ -140,28 +145,6 @@ int main()
 
         // Update
         //----------------------------------------------------------------------------------
-        // if (!up)
-        // {
-        //     if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W))
-        //         playerPos.y -= boxSize;
-        // }
-        // if (!down)
-        // {
-        //     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S))
-        //         playerPos.y += boxSize;
-        // }
-        // if (!left)
-        // {
-        //     if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))
-        //         playerPos.x -= boxSize;
-        // }
-        // if (!right)
-        // {
-        //     if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))
-        //         playerPos.x += boxSize;
-        // }
-
-
         switch(currentScreen)
         {
             case TITLE:
@@ -172,43 +155,49 @@ int main()
                 }
                 break;
             case LEVEL1:
-                // Press enter to change to ENDING screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                updates(lvl1);
+                if (score == 1)
                 {
+                    wallCount = 0;
+                    success = false;
                     currentScreen = LEVEL2;
                 }
                 break;
             case LEVEL2:
-                // Press enter to change to ENDING screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                if (score == 2)
                 {
+                    wallCount = 0;
+                    success = false;
                     currentScreen = LEVEL3;
                 }
                 break;
             case LEVEL3:
-                // Press enter to change to ENDING screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                if (score == 3)
                 {
+                    wallCount = 0;
+                    success = false;
                     currentScreen = LEVEL4;
                 }
                 break;
             case LEVEL4:
-                // Press enter to change to ENDING screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                if (score == 4)
                 {
+                    wallCount = 0;
+                    success = false;
                     currentScreen = LEVEL5;
                 }
                 break;
             case LEVEL5:
-                // Press enter to change to ENDING screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                if (score == 5)
                 {
+                    wallCount = 0;
+                    success = false;
                     currentScreen = ENDING;
                 }
                 break;
             case ENDING:
                 // Press enter to return to TITLE screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                if (IsKeyPressed(KEY_ENTER))
                 {
                     currentScreen = TITLE;
                 }
@@ -238,43 +227,34 @@ int main()
                     // LEVEL 1
                     // levels(lvl1, playerPos, player, wall, box, goal, background, boxFinal, grass);
                     levels(lvl1, player, wall, box, goal, background, boxFinal, grass);
-                    flag = 0;
                     break;
 
                 case LEVEL2:
 
                     //--------------------------------------------------------------------------------------
                     // LEVEL 2
-                    // levels(lvl2, playerPos, player, wall, box, goal, background, boxFinal, grass);
                     levels(lvl2, player, wall, box, goal, background, boxFinal, grass);
-                    flag = 0;
                     break;
 
                 case LEVEL3:
 
                     //--------------------------------------------------------------------------------------
                     // LEVEL 3
-                    // levels(lvl3, playerPos, player, wall, box, goal, background, boxFinal, grass);
                     levels(lvl3, player, wall, box, goal, background, boxFinal, grass);
-                    flag = 0;
                     break;
 
                 case LEVEL4:
 
                     //--------------------------------------------------------------------------------------
                     // LEVEL 4
-                    // levels(lvl4, playerPos, player, wall, box, goal, background, boxFinal, grass);
                     levels(lvl4, player, wall, box, goal, background, boxFinal, grass);
-                    flag = 0;
                     break;
 
                 case LEVEL5:
 
                     //--------------------------------------------------------------------------------------
                     // LEVEL 5
-                    // levels(lvl5, playerPos, player, wall, box, goal, background, boxFinal, grass);
                     levels(lvl5, player, wall, box, goal, background, boxFinal, grass);
-                    flag = 0;
                     break;
 
                 case ENDING:
@@ -321,33 +301,9 @@ int column(int j)
     return j * boxSize + heightDiff;
 }
 
-//Function to Check Player Position
-void checker(Vector2 playerPos, int i, int j)
-{
-    if (playerPos.x + boxSize == i)
-        right = true;
-    else
-        right = false;
-
-    if (playerPos.x - boxSize == i)
-        left = true;
-    else
-        left = false;
-
-    if (playerPos.y + boxSize == j)
-        down = true;
-    else
-        down = false;
-
-    if (playerPos.y - boxSize == j)
-        up = true;
-    else
-        up = false;
-}
-
 //Function to create levels
-// void levels(char lvl1[][10], Vector2 playerPos, Texture2D player, Texture2D wall, Texture2D box, Texture2D goal, Texture2D background, Texture2D boxFinal, Texture2D grass){
-void levels(char lvl1[][10], Texture2D player, Texture2D wall, Texture2D box, Texture2D goal, Texture2D background, Texture2D boxFinal, Texture2D grass){
+// void levels(char lvl[][10], Vector2 playerPos, Texture2D player, Texture2D wall, Texture2D box, Texture2D goal, Texture2D background, Texture2D boxFinal, Texture2D grass){
+void levels(char lvl[][10], Texture2D player, Texture2D wall, Texture2D box, Texture2D goal, Texture2D background, Texture2D boxFinal, Texture2D grass){
     
     
     DrawRectangle(0, 0, screenWidth, screenHeight, PURPLE);
@@ -365,48 +321,73 @@ void levels(char lvl1[][10], Texture2D player, Texture2D wall, Texture2D box, Te
         for (int j = 0; j < noOfBoxes; j++)
         {
 
-            if (lvl1[i][j] == 'B')
-            {
-                DrawTexture(box, row(i), column(j), WHITE);
-                checker(playerPos, row(i), column(j));
-            }
-            else if (lvl1[i][j] == 'P')
+            if (lvl[i][j] == 'B')
             {
                 DrawTexture(background, row(i), column(j), WHITE);
-                if (flag == 0)
-                {
-                    playerPos.x = row(i);
-                    playerPos.y = column(j);
-                    flag = 1;
+                DrawTexture(box, row(i), column(j), WHITE);
+                if(!flag){
+
+                    // boxPos[boxCount].x = row(i);
+                    // boxPos[boxCount].y = column(j);
+                    // boxCount++;
                 }
-                DrawTexture(player, playerPos.x, playerPos.y, WHITE);
+            }
+            else if (lvl[i][j] == 'P')
+            {
+                DrawTexture(background, row(i), column(j), WHITE);
+                if (!flag)
+                {
+                    // playerPos.x = row(i);
+                    // playerPos.y = column(j);
+                    playerPos.x = i;
+                    playerPos.y = j;
+
+                }
+                // DrawTexture(player, playerPos.x, playerPos.y, WHITE);
 
             }
-            else if (lvl1[i][j] == 'F')
+            else if (lvl[i][j] == 'F')
             {
                 DrawTexture(goal, row(i), column(j), WHITE);
-                checker(playerPos, row(i), column(j));
+                if(!flag){
+
+                    // targetPos[targetCount].x = row(i);
+                    // targetPos[targetCount].y = column(j);
+                    // targetCount++;
+                }
             }
-            else if (lvl1[i][j] == '1')
+            else if (lvl[i][j] == '1')
             {
                 DrawTexture(background, row(i), column(j), WHITE);
             }
-            else if (lvl1[i][j] == 'L')
+            else if (lvl[i][j] == 'L')
             {
                 DrawTexture(boxFinal, row(i), column(j), WHITE);
+                if(!flag){
+                    // targetPos[targetCount].x = row(i);
+                    // targetPos[targetCount].y = column(j);
+                    // targetCount++;
+                    // boxPos[boxCount].x = row(i);
+                    // boxPos[boxCount].y = column(j);
+                    // boxCount++;
+                }
             }
-            else if (lvl1[i][j] == 'X')
+            else if (lvl[i][j] == 'X')
             {
                 DrawTexture(grass, row(i), column(j), WHITE);
             }
-            else if (lvl1[i][j] == 'N')
+            else if (lvl[i][j] == 'N')
             {
                 DrawRectangle(row(i), column(j), boxSize, boxSize, MAROON);
             }
-            else if (lvl1[i][j] == '0')
+            else if (lvl[i][j] == '0')
             {
                 DrawTexture(wall, row(i), column(j), WHITE);
-                checker(playerPos, row(i), column(j));
+                if(!flag){
+                    wallPos[wallCount].x = row(i);
+                    wallPos[wallCount].y = column(j);
+                    wallCount++;
+                }
             }
             else
             {
@@ -414,30 +395,67 @@ void levels(char lvl1[][10], Texture2D player, Texture2D wall, Texture2D box, Te
             }
         }
     }
-    updates();
-    // DrawTexture(player, playerPos.x, playerPos.y, WHITE);
+
+    flag = 1;
+    DrawTexture(player, row(playerPos.x), column(playerPos.y), WHITE);
+
+    for (int i = 0; i < boxCount; i++){
+        if(boxPos[i].x == targetPos[i].x && boxPos[i].y == targetPos[i].y)
+        {
+            success = true;
+        }
+        else
+        {
+            success = false;
+            break;
+        }
+    }
+    if (success)
+    {
+        score++;
+    }
 }
 
-void updates ()
+void updates(char lvl[][noOfBoxes])
 {
-    if (!up)
+
+    playerX = playerPos.x;
+    playerY = playerPos.y;
+
+
+    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W))
     {
-        if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W))
-            playerPos.y -= boxSize;
+        if (lvl[playerX][playerY - 1] != '0')
+        {
+            if(lvl[playerX][playerY - 1] == 'B' || lvl[playerX][playerY - 1] == 'L')
+            {
+
+            }
+            playerPos.y --;
+        }
     }
-    if (!down)
+
+    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S))
     {
-        if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S))
-            playerPos.y += boxSize;
+        if (lvl[playerX][playerY + 1] != '0')
+        {
+            playerPos.y ++;
+        }
     }
-    if (!left)
+
+    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))
     {
-        if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))
-            playerPos.x -= boxSize;
+        if (lvl[playerX - 1][playerY] != '0')
+        {
+            playerPos.x --;
+        }
     }
-    if (!right)
+
+    if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))
     {
-        if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))
-            playerPos.x += boxSize;
+        if (lvl[playerX + 1][playerY] != '0')
+        {
+            playerPos.x ++;
+        }
     }
 }
