@@ -6,52 +6,61 @@
 using std::map;
 using std::vector;
 using std::string;
-using std::cout;
-
+using std::copy;
+using std::back_inserter;
 
 // g++ sokoban.cpp -std=c++20 `pkg-config --libs --cflags raylib` -o sokoban
-typedef enum GameScreen { TITLE, LEVEL1, LEVEL2, LEVEL3, LEVEL4, LEVEL5, ENDING } GameScreen;
 
-int score = 0;
-const int screenWidth = 1000;
-const int screenHeight = 599;
+//CONSTANTS
+const int noOfLevels = 8;
+const int screenWidth = 1199;
+const int screenHeight = 590;
 const int gameSize = screenHeight - screenHeight % 100;
 const int noOfBoxes = 10;
 const int boxSize = gameSize / noOfBoxes;
 const int widthDiff = (screenWidth - gameSize) / 2;
 const int heightDiff = (screenHeight - gameSize) / 2;
+int score = 0;
+int boxIndex = 0;
+
+//bool variables
+bool flag = true;
+bool title = true;
+
+// Textures Declaration
+Texture2D player, wall, box, floor, background, boxFinal, goal, boundary, landingPage;
 
 
-bool flag = 0;
 
-// LOADING TEXTURES
-Texture2D player;
-Texture2D wall;
-Texture2D box;
-Texture2D floor;
-Texture2D background;
-Texture2D boxFinal;
-Texture2D goal;
-
-
-map<char, Texture2D> textureMap;
 
 //Positions Variables
 Vector2 playerPos = {0, 0};
 vector<vector<int> > goalsPos;
 vector<vector<int> > boxesPos;
 
+//Data Variables
+vector<vector<char> > data;
+
 //Functions Declarations
+map<char, Texture2D> textureMap;
 void update(vector<vector<char> > &level);
-vector<vector<char> > readLvl(string levelName);
 void renderLevel(std::vector<std::vector<char> > level);
+void changeLevels();
 Vector2 findPlayer(vector<vector<char> > level);
+vector<vector<char> > readLvl(string levelName);
 vector<vector<int> > findGoals(vector<vector<char> > level);
 vector<vector<int> > findBoxes(vector<vector<char> > level);
+vector<vector<int> > findEndBoxes(vector<vector<char> > level);
 map<char, Texture2D> createTextureMap();
 bool isPlayerOnGoal();
+bool isBoxAhead(int choice, vector<vector<char> > &level);
+bool isLevelCleared(vector<vector<char> > &level);
+bool canPlayerMove(int choice, vector<vector<char> > &level);
 
 
+//--------------------------------------------------------------------------------------
+//MAIN FUNCTION
+//--------------------------------------------------------------------------------------
 int main()
 {
     // Initialization
@@ -60,7 +69,7 @@ int main()
     //--------------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------------
-    // Load Textures
+    // Loading Textures
     player = LoadTexture("./resources/player.png");
     wall = LoadTexture("./resources/wall.png");
     box = LoadTexture("./resources/crate.png");
@@ -68,6 +77,9 @@ int main()
     background = LoadTexture("./resources/tree.png");
     boxFinal = LoadTexture("./resources/crateFinal.png");
     goal = LoadTexture("./resources/goal.png");
+    boundary = LoadTexture("./resources/fence.png");
+    landingPage = LoadTexture("./resources/SokobanTitleScreen.png");
+    
     //--------------------------------------------------------------------------------------
     
 
@@ -88,41 +100,59 @@ int main()
     goal.height = boxSize;
     boxFinal.width = boxSize;
     boxFinal.height = boxSize;
+    boundary.width = boxSize;
+    boundary.height = boxSize;
 
+    landingPage.width = screenWidth;
+    landingPage.height = screenHeight;
+    
+    //--------------------------------------------------------------------------------------
+    //Calling Texture Map
     textureMap = createTextureMap();
 
     //--------------------------------------------------------------------------------------
-    // Set game Frames-per-seconds
-    SetTargetFPS(10);
+    // Set game Frames-per-seconds (FPS)
+    SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
-    vector<vector<char> > data = readLvl("lvl1.txt");
-    playerPos = findPlayer(data);
-    goalsPos = findGoals(data);
-    boxesPos = findBoxes(data);
-    
+
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
 
         // Update
         //----------------------------------------------------------------------------------
+        if(isLevelCleared(data) || flag)
+        {
+            changeLevels();
+        }
         
         update(data);
-
-        //----------------------------------------------------------------------------------
-        // Draw
         //----------------------------------------------------------------------------------
 
+
+        //----------------------------------------------------------------------------------
+        // Start Drawing
         BeginDrawing();
 
-        ClearBackground(RAYWHITE);
-        renderLevel(data);
+        if(IsKeyDown(KEY_ENTER))
+        {   
+            title = false;
+        }
+        if(title){
+            DrawTexture(landingPage, 0, 0, WHITE);
+        }
+        else if(!title)
+        {
+            renderLevel(data);
+
+        }
 
         EndDrawing();
+        // Stop Drawing
         //----------------------------------------------------------------------------------
     }
 
-    // De-Initialization
+    // Unload Textures To Free Up memory
 
     UnloadTexture(player);
     UnloadTexture(wall);
@@ -131,6 +161,10 @@ int main()
     UnloadTexture(background);
     UnloadTexture(goal);
     UnloadTexture(boxFinal);
+    UnloadTexture(boundary);
+    UnloadTexture(landingPage);
+
+
     //--------------------------------------------------------------------------------------
     CloseWindow(); // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
@@ -138,50 +172,13 @@ int main()
     return 0;
 }
 
-vector<vector<char> > readLvl(string levelName)
-{
-
-    std::ifstream level(levelName);
-
-    vector<std::vector<char> > lvl;
-    string line;
-
-    while (getline(level, line))
-    {
-        char char_array[line.length() + 1];
-        
-        strcpy(char_array, line.c_str());
-        
-        std::vector <char> temp;
-
-        std::copy(line.begin(), line.end(), std::back_inserter(temp));
-
-        lvl.push_back(temp);
-        
-    }
-    return lvl;
-}
 
 
-void renderLevel(std::vector<std::vector<char> > level)
-{
-
-    DrawRectangle(0, 0, screenWidth, screenHeight, PURPLE);
-
-    //--------------------------------------------------------------------------------------
-    // ADDING BACKGROUND COLOR
-    DrawRectangle(widthDiff, heightDiff, gameSize, gameSize, BROWN);
-
-    for(int i = 0; i < level.size(); i++)
-    {
-        for(int j = 0; j < level.at(i).size(); j++)
-        {   
-            DrawTexture(textureMap[level.at(i).at(j)], i * boxSize + widthDiff, j * boxSize + heightDiff, WHITE);
-        }
-    }
-}
 
 
+
+
+//Function to Map Sprites On Characters to Use It in render
 map<char, Texture2D> createTextureMap()
 {
 
@@ -193,11 +190,35 @@ map<char, Texture2D> createTextureMap()
     textureMap.insert(std::pair<char, Texture2D>('1', floor));
     textureMap.insert(std::pair<char, Texture2D>('X', background));
     textureMap.insert(std::pair<char, Texture2D>('F', goal));
+    textureMap.insert(std::pair<char, Texture2D>('N', boundary));
 
     return textureMap;
 
 }
 
+//Function To Read Data With Filing
+vector<vector<char> > readLvl(string levelName)
+{
+
+    std::ifstream level(levelName);
+
+    vector<vector<char> > lvl;
+    string line;
+
+    while (getline(level, line))
+    {
+        
+        vector <char> temp;
+
+        copy(line.begin(), line.end(), back_inserter(temp));
+
+        lvl.push_back(temp);
+        
+    }
+    return lvl;
+}
+
+//Function To Find Position of Player
 Vector2 findPlayer(vector<vector<char> > level)
 {
     for (int i = 0; i < level.size(); i++)
@@ -213,6 +234,7 @@ Vector2 findPlayer(vector<vector<char> > level)
     return {-1, -1};
 }
 
+//Function To Find Position of all the Target Position of Boxes
 vector<vector<int> > findGoals(vector<vector<char> > level)
 {
     vector<vector<int> > goals;
@@ -230,6 +252,7 @@ vector<vector<int> > findGoals(vector<vector<char> > level)
     return goals;
 }
 
+//Function To Find Position Of all the Boxes
 vector<vector<int> > findBoxes(vector<vector<char> > level)
 {
     vector<vector<int> > boxes;
@@ -237,7 +260,7 @@ vector<vector<int> > findBoxes(vector<vector<char> > level)
     {
         for (int j = 0; j < level.at(i).size(); j++)
         {
-            if (level.at(i).at(j) == 'F')
+            if (level.at(i).at(j) == 'B')
             {
                 vector<int> temp{i, j};
                 boxes.push_back(temp);
@@ -247,6 +270,38 @@ vector<vector<int> > findBoxes(vector<vector<char> > level)
     return boxes;
 }
 
+//Function To render Level with Sprites
+void renderLevel(std::vector<std::vector<char> > level)
+{
+
+    //--------------------------------------------------------------------------------------
+    ClearBackground(RAYWHITE);
+    // ADDING BACKGROUND COLOR
+    DrawRectangle(0, 0, screenWidth, screenHeight, PURPLE);
+    //--------------------------------------------------------------------------------------
+
+    //--------------------------------------------------------------------------------------
+    //DRAW LEVEL
+    for(int i = 0; i < level.size(); i++)
+    {
+        for(int j = 0; j < level.at(i).size(); j++)
+        {   
+            DrawTexture(textureMap[level.at(i).at(j)], i * boxSize + widthDiff, j * boxSize + heightDiff, WHITE);
+        }
+    }
+
+    for (int i = 0; i < boxesPos.size(); i++)
+    {
+        int tempRow = boxesPos[i][0];
+        int tempCol = boxesPos[i][1];
+        DrawTexture(textureMap[level.at(tempRow).at(tempCol)], tempRow * boxSize + widthDiff, tempCol * boxSize + heightDiff, WHITE);
+    }
+
+    DrawTexture(textureMap[level.at(playerPos.x).at(playerPos.y)], playerPos.x * boxSize + widthDiff, playerPos.y * boxSize + heightDiff, WHITE);
+
+}
+
+//Function To Update Position Of Player
 void update(vector<vector<char> > &level)
 {
 
@@ -254,13 +309,29 @@ void update(vector<vector<char> > &level)
     {
         if(level[playerPos.x][playerPos.y - 1] != '0')
         {
-            if(isPlayerOnGoal())
+            if(isBoxAhead(1, level))
+            {
+                if(isPlayerOnGoal())
+                    level[playerPos.x][playerPos.y] = 'F';
+                else
+                    level[playerPos.x][playerPos.y] = '1';
+                
+                level[boxesPos[boxIndex][0]][boxesPos[boxIndex][1]] = 'P';
+                playerPos.y = boxesPos[boxIndex][1];
+                boxesPos[boxIndex][1]--;
+                level[boxesPos[boxIndex][0]][boxesPos[boxIndex][1]] = 'B';
+            }
+            else if(isPlayerOnGoal() && !isBoxAhead(1, level) && !canPlayerMove(1, level))
+            {
+                level[playerPos.x][playerPos.y] = 'P';
+            }
+            else if(isPlayerOnGoal())
             {
                 level[playerPos.x][playerPos.y] = 'F';
                 playerPos.y--;
                 level[playerPos.x][playerPos.y] = 'P';
             }
-            else
+            else if(canPlayerMove(1, level))
             {
                 level[playerPos.x][playerPos.y] = '1';
                 playerPos.y--;
@@ -269,18 +340,33 @@ void update(vector<vector<char> > &level)
         }
     }
 
-
     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S))
     {
         if(level[playerPos.x][playerPos.y + 1] != '0')
         {
-            if(isPlayerOnGoal())
+            if(isBoxAhead(2, level))
+            {
+                if(isPlayerOnGoal())
+                    level[playerPos.x][playerPos.y] = 'F';
+                else
+                    level[playerPos.x][playerPos.y] = '1';
+
+                level[boxesPos[boxIndex][0]][boxesPos[boxIndex][1]] = 'P';
+                playerPos.y = boxesPos[boxIndex][1];
+                boxesPos[boxIndex][1]++;
+                level[boxesPos[boxIndex][0]][boxesPos[boxIndex][1]] = 'B';
+            }
+            else if(isPlayerOnGoal() && !isBoxAhead(2, level) && !canPlayerMove(2, level))
+            {
+                level[playerPos.x][playerPos.y] = 'P';
+            }
+            else if(isPlayerOnGoal())
             {
                 level[playerPos.x][playerPos.y] = 'F';
                 playerPos.y++;
                 level[playerPos.x][playerPos.y] = 'P';
             }
-            else
+            else if(canPlayerMove(2, level))
             {
                 level[playerPos.x][playerPos.y] = '1';
                 playerPos.y++;
@@ -289,18 +375,33 @@ void update(vector<vector<char> > &level)
         }
     }
     
-
     if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))
     {
         if(level[playerPos.x - 1][playerPos.y] != '0')
         {
-            if(isPlayerOnGoal())
+            if(isBoxAhead(3, level))
+            {
+                if(isPlayerOnGoal())
+                    level[playerPos.x][playerPos.y] = 'F';
+                else
+                    level[playerPos.x][playerPos.y] = '1';
+
+                level[boxesPos[boxIndex][0]][boxesPos[boxIndex][1]] = 'P';
+                playerPos.x = boxesPos[boxIndex][0];
+                boxesPos[boxIndex][0]--;
+                level[boxesPos[boxIndex][0]][boxesPos[boxIndex][1]] = 'B';
+            }
+            else if(isPlayerOnGoal() && !isBoxAhead(3, level) && !canPlayerMove(3, level))
+            {
+                level[playerPos.x][playerPos.y] = 'P';
+            }
+            else if(isPlayerOnGoal())
             {
                 level[playerPos.x][playerPos.y] = 'F';
                 playerPos.x--;
                 level[playerPos.x][playerPos.y] = 'P';
             }
-            else
+            else if(canPlayerMove(3, level))
             {
                 level[playerPos.x][playerPos.y] = '1';
                 playerPos.x--;
@@ -313,13 +414,30 @@ void update(vector<vector<char> > &level)
     {
         if(level[playerPos.x + 1][playerPos.y] != '0')
         {
-            if(isPlayerOnGoal())
+            if(isBoxAhead(4, level))
+            {
+                if(isPlayerOnGoal())
+                    level[playerPos.x][playerPos.y] = 'F';
+                else
+                    level[playerPos.x][playerPos.y] = '1';
+                
+                
+                level[boxesPos[boxIndex][0]][boxesPos[boxIndex][1]] = 'P';
+                playerPos.x = boxesPos[boxIndex][0];
+                boxesPos[boxIndex][0]++;
+                level[boxesPos[boxIndex][0]][boxesPos[boxIndex][1]] = 'B';
+            }
+            else if(isPlayerOnGoal() && !isBoxAhead(4, level) && !canPlayerMove(4, level))
+            {
+                level[playerPos.x][playerPos.y] = 'P';
+            }
+            else if(isPlayerOnGoal())
             {
                 level[playerPos.x][playerPos.y] = 'F';
                 playerPos.x++;
                 level[playerPos.x][playerPos.y] = 'P';
             }
-            else
+            else if(canPlayerMove(4, level))
             {
                 level[playerPos.x][playerPos.y] = '1';
                 playerPos.x++;
@@ -327,25 +445,242 @@ void update(vector<vector<char> > &level)
             }
         }
     }
+
+    if(IsKeyDown(KEY_ENTER))
+    {
+        flag = true;
+    }
 }
 
-
+//Function To Check Weather Player is standing on Goal
 bool isPlayerOnGoal()
 {
     for (int i = 0; i < goalsPos.size(); i++)
     {
-        if(playerPos.x == goalsPos[i][0] && playerPos.y == goalsPos[i][1])//[ 1st brac ([ 2nd brac (0), 1])
+        //[ 1st brac ([ 2nd brac (0), 1 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ])
+
+        if(playerPos.x == goalsPos[i][0] && playerPos.y == goalsPos[i][1])
             return true;
     }
     return false;
 }
 
-bool isBoxAhead()
+//Function To check Is Box ahead and can be moved
+bool isBoxAhead(int choice, vector<vector<char> > &level)
 {
     for (int i = 0; i < boxesPos.size(); i++)
     {
-        if(playerPos.x == boxesPos[i][0] && playerPos.y == boxesPos[i][1])//[ 1st brac ([ 2nd brac (0), 1])
-            return true;
+        switch (choice)
+        {
+        case 1:
+            if(playerPos.x == boxesPos[i][0] && playerPos.y - 1 == boxesPos[i][1] && level[playerPos.x][playerPos.y - 2] != '0' && (level[playerPos.x][playerPos.y - 2] != 'B' && level[playerPos.x][playerPos.y - 2] != 'L'))
+            {
+                boxIndex = i;
+                return true;
+            }
+            break;
+        
+        case 2:
+            if(playerPos.x == boxesPos[i][0] && playerPos.y + 1 == boxesPos[i][1] && level[playerPos.x][playerPos.y + 2] != '0' && (level[playerPos.x][playerPos.y + 2] != 'B' && level[playerPos.x][playerPos.y + 2] != 'L'))
+            {
+                boxIndex = i;
+                return true;
+            }
+            break;
+
+        case 3:
+            if(playerPos.x - 1 == boxesPos[i][0] && playerPos.y == boxesPos[i][1] && level[playerPos.x - 2][playerPos.y] != '0' && (level[playerPos.x - 2][playerPos.y] != 'B' && level[playerPos.x - 2][playerPos.y] != 'L'))
+            {
+                boxIndex = i;
+                return true;
+            }
+            break;
+
+        case 4:
+            if(playerPos.x + 1 == boxesPos[i][0] && playerPos.y == boxesPos[i][1] && level[playerPos.x + 2][playerPos.y] != '0' && (level[playerPos.x + 2][playerPos.y] != 'B' && level[playerPos.x + 2][playerPos.y] != 'L'))
+            {
+                boxIndex = i;
+                return true;
+            }
+            break;
+
+        default:
+            return false;
+            break;
+        }
     }
     return false;
 }
+
+//Function To Check Status of Level
+bool isLevelCleared(vector<vector<char> > &level)
+{
+    int count = 0; 
+    for (int i = 0; i < goalsPos.size(); i++)
+    {
+        for (int j = 0; j < boxesPos.size(); j++)
+        {
+            if(goalsPos[i][0] == boxesPos[j][0] && goalsPos[i][1] == boxesPos[j][1])
+            {
+                count++;
+                level[goalsPos[i][0]][goalsPos[i][1]] = 'L';
+                break;
+
+            }
+        }
+    }
+    
+    if(count == boxesPos.size())
+    {
+        if(score == noOfLevels)
+        {
+            score = 1;
+            flag = true;
+            title = true;
+        }
+        else
+        {
+            score++;
+            flag = true;
+        }
+        return true;
+    }
+    return false;
+
+}
+
+//Function To Check Weather Player Can Move Or Not
+bool canPlayerMove(int choice, vector<vector<char> > &level)
+{
+    switch (choice)
+    {
+    case 1:
+        if(level[playerPos.x][playerPos.y - 1] == '1' || level[playerPos.x][playerPos.y - 1] == 'F' && level[playerPos.x][playerPos.y - 1] != 'L')
+        {
+            return true;
+        }
+        break;
+    
+    case 2:
+        if(level[playerPos.x][playerPos.y + 1] == '1' || level[playerPos.x][playerPos.y + 1] == 'F' && level[playerPos.x][playerPos.y + 1] != 'L')
+        {
+            return true;
+        }
+        break;
+
+    case 3:
+        if(level[playerPos.x - 1][playerPos.y] == '1' || level[playerPos.x - 1][playerPos.y] == 'F' && level[playerPos.x - 1][playerPos.y] != 'L')
+        {
+            return true;
+        }
+        break;
+
+    case 4:
+        if(level[playerPos.x + 1][playerPos.y] == '1' || level[playerPos.x + 1][playerPos.y] == 'F' && level[playerPos.x + 1][playerPos.y] != 'L')
+        {
+            return true;
+        }
+        break;
+
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+//Function To Change Levels
+void changeLevels()
+{
+    switch (score)
+    {
+    case 1:
+        if(flag)
+        {
+            data = readLvl("lvl1.txt");
+            playerPos = findPlayer(data);
+            goalsPos = findGoals(data);
+            boxesPos = findBoxes(data);
+        }
+        break;
+
+    case 2:
+        if(flag)
+        {
+            data = readLvl("lvl2.txt");
+            playerPos = findPlayer(data);
+            goalsPos = findGoals(data);
+            boxesPos = findBoxes(data);
+        }
+        break;
+
+    case 3:
+        if(flag)
+        {
+            data = readLvl("lvl3.txt");
+            playerPos = findPlayer(data);
+            goalsPos = findGoals(data);
+            boxesPos = findBoxes(data);
+        }
+        break;
+
+    case 4:
+        if(flag)
+        {
+            data = readLvl("lvl4.txt");
+            playerPos = findPlayer(data);
+            goalsPos = findGoals(data);
+            boxesPos = findBoxes(data);
+        }
+        break;
+    case 5:
+        if(flag)
+        {
+            data = readLvl("lvl5.txt");
+            playerPos = findPlayer(data);
+            goalsPos = findGoals(data);
+            boxesPos = findBoxes(data);
+        }
+        break;
+    case 6:
+        if(flag)
+        {
+            data = readLvl("lvl6.txt");
+            playerPos = findPlayer(data);
+            goalsPos = findGoals(data);
+            boxesPos = findBoxes(data);
+        }
+        break;
+    case 7:
+        if(flag)
+        {
+            data = readLvl("lvl7.txt");
+            playerPos = findPlayer(data);
+            goalsPos = findGoals(data);
+            boxesPos = findBoxes(data);
+        }
+        break;
+    
+    case 8:
+        if(flag)
+        {
+            data = readLvl("lvl8.txt");
+            playerPos = findPlayer(data);
+            goalsPos = findGoals(data);
+            boxesPos = findBoxes(data);
+        }
+        break;
+
+    default:
+        flag = false;
+        break;
+    
+    }
+
+    flag = false;
+
+}
+
+
+
+
