@@ -1,3 +1,8 @@
+//==========================================================================//
+//          USE ENTER TO START THE GAME AND TO RESET THE LEVEL              //
+//==========================================================================//
+
+
 #include "raylib.h"
 #include <iostream>
 #include <fstream>
@@ -9,6 +14,7 @@ using std::string;
 using std::copy;
 using std::back_inserter;
 
+//Command Used to Run the Code
 // g++ sokoban.cpp -std=c++20 `pkg-config --libs --cflags raylib` -o sokoban
 
 //CONSTANTS
