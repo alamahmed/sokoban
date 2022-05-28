@@ -8,17 +8,18 @@
 #include <fstream>
 #include <vector>
 #include <map>
+using std::to_string;
 using std::map;
 using std::vector;
 using std::string;
 using std::copy;
 using std::back_inserter;
 
-//Command Used to Run the Code
+//Command Used to Compile the Code
 // g++ sokoban.cpp -std=c++20 `pkg-config --libs --cflags raylib` -o sokoban
 
 //CONSTANTS
-const int noOfLevels = 8;
+const int noOfLevels = 10;
 const int screenWidth = 1199;
 const int screenHeight = 590;
 const int gameSize = screenHeight - screenHeight % 100;
@@ -179,11 +180,6 @@ int main()
 }
 
 
-
-
-
-
-
 //Function to Map Sprites On Characters to Use It in render
 map<char, Texture2D> createTextureMap()
 {
@@ -248,7 +244,7 @@ vector<vector<int> > findGoals(vector<vector<char> > level)
     {
         for (int j = 0; j < level.at(i).size(); j++)
         {
-            if (level.at(i).at(j) == 'F')
+            if (level.at(i).at(j) == 'F' || level.at(i).at(j) == 'L')
             {
                 vector<int> temp{i, j};
                 goals.push_back(temp);
@@ -266,7 +262,7 @@ vector<vector<int> > findBoxes(vector<vector<char> > level)
     {
         for (int j = 0; j < level.at(i).size(); j++)
         {
-            if (level.at(i).at(j) == 'B')
+            if (level.at(i).at(j) == 'B' || level.at(i).at(j) == 'L')
             {
                 vector<int> temp{i, j};
                 boxes.push_back(temp);
@@ -283,11 +279,14 @@ void renderLevel(std::vector<std::vector<char> > level)
     //--------------------------------------------------------------------------------------
     ClearBackground(RAYWHITE);
     // ADDING BACKGROUND COLOR
-    DrawRectangle(0, 0, screenWidth, screenHeight, PURPLE);
+    DrawRectangle(0, 0, screenWidth, screenHeight, BLACK);
     //--------------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------------
     //DRAW LEVEL
+    string levelName = "LEVEL " + to_string(score);
+    DrawText(levelName.c_str(), 0, 0, 50, WHITE);
+    
     for(int i = 0; i < level.size(); i++)
     {
         for(int j = 0; j < level.at(i).size(); j++)
@@ -598,93 +597,14 @@ bool canPlayerMove(int choice, vector<vector<char> > &level)
 //Function To Change Levels
 void changeLevels()
 {
-    switch (score)
+    if(flag)
     {
-    case 1:
-        if(flag)
-        {
-            data = readLvl("lvl1.txt");
-            playerPos = findPlayer(data);
-            goalsPos = findGoals(data);
-            boxesPos = findBoxes(data);
-        }
-        break;
-
-    case 2:
-        if(flag)
-        {
-            data = readLvl("lvl2.txt");
-            playerPos = findPlayer(data);
-            goalsPos = findGoals(data);
-            boxesPos = findBoxes(data);
-        }
-        break;
-
-    case 3:
-        if(flag)
-        {
-            data = readLvl("lvl3.txt");
-            playerPos = findPlayer(data);
-            goalsPos = findGoals(data);
-            boxesPos = findBoxes(data);
-        }
-        break;
-
-    case 4:
-        if(flag)
-        {
-            data = readLvl("lvl4.txt");
-            playerPos = findPlayer(data);
-            goalsPos = findGoals(data);
-            boxesPos = findBoxes(data);
-        }
-        break;
-    case 5:
-        if(flag)
-        {
-            data = readLvl("lvl5.txt");
-            playerPos = findPlayer(data);
-            goalsPos = findGoals(data);
-            boxesPos = findBoxes(data);
-        }
-        break;
-    case 6:
-        if(flag)
-        {
-            data = readLvl("lvl6.txt");
-            playerPos = findPlayer(data);
-            goalsPos = findGoals(data);
-            boxesPos = findBoxes(data);
-        }
-        break;
-    case 7:
-        if(flag)
-        {
-            data = readLvl("lvl7.txt");
-            playerPos = findPlayer(data);
-            goalsPos = findGoals(data);
-            boxesPos = findBoxes(data);
-        }
-        break;
-    
-    case 8:
-        if(flag)
-        {
-            data = readLvl("lvl8.txt");
-            playerPos = findPlayer(data);
-            goalsPos = findGoals(data);
-            boxesPos = findBoxes(data);
-        }
-        break;
-
-    default:
-        flag = false;
-        break;
-    
+        data = readLvl("lvl" + std::to_string(score) + ".txt");
+        playerPos = findPlayer(data);
+        goalsPos = findGoals(data);
+        boxesPos = findBoxes(data);
     }
-
     flag = false;
-
 }
 
 
