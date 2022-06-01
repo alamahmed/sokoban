@@ -13,6 +13,7 @@ using std::map;
 using std::vector;
 using std::string;
 using std::copy;
+using std::ifstream;
 using std::back_inserter;
 
 //Command Used to Compile the Code
@@ -63,6 +64,7 @@ bool isPlayerOnGoal();
 bool isBoxAhead(int choice, vector<vector<char> > &level);
 bool isLevelCleared(vector<vector<char> > &level);
 bool canPlayerMove(int choice, vector<vector<char> > &level);
+int updateBoxSprite(vector<vector<char> > &level);
 
 
 //--------------------------------------------------------------------------------------
@@ -128,12 +130,17 @@ int main()
 
         // Update
         //----------------------------------------------------------------------------------
-        if(isLevelCleared(data) || flag)
-        {
-            changeLevels();
-        }
+        // if(IsKeyPressed(KEY_N))
+        // {
+            if(isLevelCleared(data) || flag)
+            {
+                changeLevels();
+            }
+        // }
         
         update(data);
+        updateBoxSprite(data);
+
         //----------------------------------------------------------------------------------
 
 
@@ -202,7 +209,7 @@ map<char, Texture2D> createTextureMap()
 vector<vector<char> > readLvl(string levelName)
 {
 
-    std::ifstream level(levelName);
+    ifstream level(levelName);
 
     vector<vector<char> > lvl;
     string line;
@@ -520,21 +527,7 @@ bool isBoxAhead(int choice, vector<vector<char> > &level)
 //Function To Check Status of Level
 bool isLevelCleared(vector<vector<char> > &level)
 {
-    int count = 0; 
-    for (int i = 0; i < goalsPos.size(); i++)
-    {
-        for (int j = 0; j < boxesPos.size(); j++)
-        {
-            if(goalsPos[i][0] == boxesPos[j][0] && goalsPos[i][1] == boxesPos[j][1])
-            {
-                count++;
-                level[goalsPos[i][0]][goalsPos[i][1]] = 'L';
-                break;
-
-            }
-        }
-    }
-    
+    int count = updateBoxSprite(level);
     if(count == boxesPos.size())
     {
         if(score == noOfLevels)
@@ -607,6 +600,25 @@ void changeLevels()
     flag = false;
 }
 
+// Function to Update Box Sprite
+int updateBoxSprite(vector<vector<char> > &level)
+{
+    int count = 0; 
+    for (int i = 0; i < goalsPos.size(); i++)
+    {
+        for (int j = 0; j < boxesPos.size(); j++)
+        {
+            if(goalsPos[i][0] == boxesPos[j][0] && goalsPos[i][1] == boxesPos[j][1])
+            {
+                count++;
+                level[goalsPos[i][0]][goalsPos[i][1]] = 'L';
+                break;
+
+            }
+        }
+    }
+    return count;
+}
 
 
 
